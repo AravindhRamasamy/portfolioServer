@@ -43,13 +43,6 @@ app.post('/store-ip', async (req, res) => {
       return res.status(400).json({ error: 'Location data not available' });
     }
 
-    const existingIps = readIpsFromFile();
-
-    const ipExists = existingIps.some((entry) => entry.ip === fetchedIp);
-    if (ipExists) {
-      return res.status(200).json({ error: 'IP address already stored' });
-    }
-
     const [lat, lon] = loc.split(',');
     const newIpEntry = {
       ip: fetchedIp,
@@ -58,8 +51,19 @@ app.post('/store-ip', async (req, res) => {
       lon: parseFloat(lon),
       date: new Date().toISOString(),
     };
-    existingIps.push(newIpEntry);
 
+    const existingIps = readIpsFromFile();
+    const ipExists = existingIps.some((entry) => entry.ip === fetchedIp);
+    
+    if (ipExists) {
+      console.log('IP address already stored:', fetchedIp);
+      return res.status(200).json({
+        message: 'IP address already stored, but sending data',
+        data: newIpEntry,
+      });
+    }
+
+    existingIps.push(newIpEntry);
     writeIpsToFile(existingIps);
 
     res.status(200).json({ message: 'IP address stored successfully', data: newIpEntry });
