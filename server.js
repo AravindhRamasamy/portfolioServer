@@ -47,7 +47,7 @@ app.post('/store-ip', async (req, res) => {
 
     const ipExists = existingIps.some((entry) => entry.ip === fetchedIp);
     if (ipExists) {
-      return res.status(400).json({ error: 'IP address already stored' });
+      return res.status(200).json({ error: 'IP address already stored' });
     }
 
     const [lat, lon] = loc.split(',');
