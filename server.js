@@ -27,14 +27,13 @@ const writeIpsToFile = (ips) => {
 
 app.post('/store-ip', async (req, res) => {
   const token = process.env.IPINFO_TOKEN;; 
-  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const ip = forwardedIps ? forwardedIps.split(',')[0].trim() : req.connection.remoteAddress;
+
 
   if (!ip) {
     return res.status(400).json({ error: 'IP is required' });
   }
-
   try {
-    console.log(`Using IPINFO_TOKEN: ${token}`);
     console.log(`IP: ${ip}`);
     const response = await axios.get(`https://ipinfo.io/${ip}?token=${token}`);
     const { ip: fetchedIp, city, loc } = response.data;
