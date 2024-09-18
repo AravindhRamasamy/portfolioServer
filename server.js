@@ -34,6 +34,8 @@ app.post('/store-ip', async (req, res) => {
   }
 
   try {
+    console.log(`Using IPINFO_TOKEN: ${token}`);
+    console.log(`IP: ${ip}`);
     const response = await axios.get(`https://ipinfo.io/${ip}?token=${token}`);
     const { ip: fetchedIp, city, loc } = response.data;
     
