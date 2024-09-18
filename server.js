@@ -1,20 +1,17 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors'); // Import CORS middleware
+const cors = require('cors'); 
+const axios = require('axios'); 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Enable CORS for all requests (you can specify specific origins if needed)
 app.use(cors());
 
-// Middleware to parse incoming JSON request bodies
 app.use(express.json());
 
-// Path to the JSON file where IP data will be stored
 const ipDataFilePath = path.join(__dirname, 'ips.json');
 
-// Utility function to read IPs from the file
 const readIpsFromFile = () => {
   try {
     const data = fs.readFileSync(ipDataFilePath, 'utf-8');
@@ -24,45 +21,57 @@ const readIpsFromFile = () => {
   }
 };
 
-// Utility function to write IPs to the file
 const writeIpsToFile = (ips) => {
   fs.writeFileSync(ipDataFilePath, JSON.stringify(ips, null, 2), 'utf-8');
 };
 
-// Route to handle storing an IP address and location
-app.post('/store-ip', (req, res) => {
-  const { ip, city } = req.body;
+app.post('/store-ip', async (req, res) => {
+  const token = process.env.IPINFO_TOKEN;; 
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-  if (!ip || !city) {
-    return res.status(400).json({ error: 'IP and city are required' });
+  if (!ip) {
+    return res.status(400).json({ error: 'IP is required' });
   }
 
-  // Read the existing IP addresses from the file
-  const existingIps = readIpsFromFile();
+  try {
+    const response = await axios.get(`https://ipinfo.io/${ip}?token=${token}`);
+    const { ip: fetchedIp, city, loc } = response.data;
+    
+    if (!loc) {
+      return res.status(400).json({ error: 'Location data not available' });
+    }
 
-  // Check if the IP already exists
-  const ipExists = existingIps.some((entry) => entry.ip === ip);
-  if (ipExists) {
-    return res.status(400).json({ error: 'IP address already stored' });
+    const existingIps = readIpsFromFile();
+
+    const ipExists = existingIps.some((entry) => entry.ip === fetchedIp);
+    if (ipExists) {
+      return res.status(400).json({ error: 'IP address already stored' });
+    }
+
+    const [lat, lon] = loc.split(',');
+    const newIpEntry = {
+      ip: fetchedIp,
+      city,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      date: new Date().toISOString(),
+    };
+    existingIps.push(newIpEntry);
+
+    writeIpsToFile(existingIps);
+
+    res.status(200).json({ message: 'IP address stored successfully', data: newIpEntry });
+  } catch (error) {
+    console.error('Error fetching IP info:', error.message);
+    res.status(500).json({ error: 'Failed to fetch IP information' });
   }
-
-  // Add the new IP and city to the array
-  const newIpEntry = { ip, city, date: new Date().toISOString() };
-  existingIps.push(newIpEntry);
-
-  // Write the updated IPs back to the file
-  writeIpsToFile(existingIps);
-
-  res.status(200).json({ message: 'IP address stored successfully', data: newIpEntry });
 });
 
-// Route to retrieve all stored IP addresses
 app.get('/ips', (req, res) => {
   const storedIps = readIpsFromFile();
   res.status(200).json(storedIps);
 });
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
