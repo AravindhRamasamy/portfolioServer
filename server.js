@@ -26,7 +26,8 @@ const writeIpsToFile = (ips) => {
 };
 
 app.post('/store-ip', async (req, res) => {
-  const token = process.env.IPINFO_TOKEN;; 
+  const token = process.env.IPINFO_TOKEN;
+  const forwardedIps = req.headers['x-forwarded-for'];
   const ip = forwardedIps ? forwardedIps.split(',')[0].trim() : req.connection.remoteAddress;
 
 
