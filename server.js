@@ -77,15 +77,15 @@ app.post('/store-ip', async (req, res) => {
 });
 
 // Route to get all stored IPs
-app.get('/ips', async (req, res) => {
-  try {
-    const storedIps = await IpModel.find();
-    res.status(200).json(storedIps);
-  } catch (error) {
-    console.error('Error fetching stored IPs:', error.message);
-    res.status(500).json({ error: 'Failed to fetch stored IPs' });
-  }
-});
+// app.get('/ips', async (req, res) => {
+//   try {
+//     const storedIps = await IpModel.find();
+//     res.status(200).json(storedIps);
+//   } catch (error) {
+//     console.error('Error fetching stored IPs:', error.message);
+//     res.status(500).json({ error: 'Failed to fetch stored IPs' });
+//   }
+// });
 
 // Start the server
 app.listen(PORT, () => {
